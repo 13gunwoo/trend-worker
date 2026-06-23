@@ -3,7 +3,8 @@
 import os
 import json
 from datetime import date
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -26,11 +27,22 @@ MIME_MAP = {
 
 
 def _get_service():
-    sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-    if not sa_json:
-        raise ValueError("GOOGLE_SERVICE_ACCOUNT_JSON 환경변수가 없습니다.")
-    sa_info = json.loads(sa_json)
-    creds = service_account.Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+    client_id     = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    refresh_token = os.environ.get("GOOGLE_REFRESH_TOKEN")
+
+    if not all([client_id, client_secret, refresh_token]):
+        raise ValueError("GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN 환경변수가 필요합니다.")
+
+    creds = Credentials(
+        token=None,
+        refresh_token=refresh_token,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_uri="https://oauth2.googleapis.com/token",
+        scopes=SCOPES,
+    )
+    creds.refresh(Request())
     return build("drive", "v3", credentials=creds)
 
 
@@ -43,7 +55,7 @@ def _get_or_create_folder(service, name, parent_id):
     )
     results = service.files().list(
         q=query, fields="files(id, name)",
-        supportsAllDrives=True, includeItemsFromAllDrives=True
+        supportsAllDrives=True
     ).execute()
     files = results.get("files", [])
     if files:
@@ -55,7 +67,7 @@ def _get_or_create_folder(service, name, parent_id):
         "parents": [parent_id],
     }
     folder = service.files().create(
-        body=metadata, fields="id", supportsAllDrives=True
+        body=metadata, fields="id"
     ).execute()
     return folder["id"]
 
@@ -115,15 +127,15 @@ def upload(filepaths, platform):
         )
         existing = service.files().list(
             q=query, fields="files(id)",
-            supportsAllDrives=True, includeItemsFromAllDrives=True
+            supportsAllDrives=True
         ).execute().get("files", [])
         for f in existing:
-            service.files().delete(fileId=f["id"], supportsAllDrives=True).execute()
+            service.files().delete(fileId=f["id"]).execute()
 
         metadata = {"name": filename, "parents": [target_folder_id]}
         media = MediaFileUpload(filepath, mimetype=mime_type)
         file = service.files().create(
-            body=metadata, media_body=media, fields="id, name", supportsAllDrives=True
+            body=metadata, media_body=media, fields="id, name"
         ).execute()
         uploaded.append(file.get("name"))
 
@@ -165,7 +177,7 @@ def download_comparison_html(platform, filename, subfolder=None):
     )
     results = service.files().list(
         q=query, fields="files(id)",
-        supportsAllDrives=True, includeItemsFromAllDrives=True
+        supportsAllDrives=True
     ).execute()
     files = results.get("files", [])
     if not files:
@@ -200,10 +212,10 @@ def upload_comparison_html(platform, filename, html_content, subfolder=None):
     )
     existing = service.files().list(
         q=query, fields="files(id)",
-        supportsAllDrives=True, includeItemsFromAllDrives=True
+        supportsAllDrives=True
     ).execute().get("files", [])
     for f in existing:
-        service.files().delete(fileId=f["id"], supportsAllDrives=True).execute()
+        service.files().delete(fileId=f["id"]).execute()
 
     with _tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".html", delete=False) as tmp:
         tmp.write(html_content)
@@ -212,6 +224,6 @@ def upload_comparison_html(platform, filename, html_content, subfolder=None):
     metadata = {"name": filename, "parents": [comp_folder_id]}
     media = MediaFileUpload(tmp_path, mimetype="text/html")
     service.files().create(
-        body=metadata, media_body=media, fields="id", supportsAllDrives=True
+        body=metadata, media_body=media, fields="id"
     ).execute()
     os.remove(tmp_path)
