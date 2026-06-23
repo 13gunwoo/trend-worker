@@ -6,12 +6,10 @@ import json
 import subprocess
 import tempfile
 
-from collectors import kakaopage, munpia, naver, naver_series
 from exporters import to_json, to_excel, to_dashboard
 from exporters import munpia_to_excel, munpia_to_dashboard
 from exporters import naver_to_excel, naver_to_dashboard
 from exporters import naver_series_to_excel, naver_series_to_dashboard
-from exporters import naver_series_comparison
 from exporters import comparison
 from uploader import gdrive
 from notifier import kakao
@@ -103,6 +101,7 @@ def run_exporters(data, options, output_dir, label, platform_key="kakaopage"):
 
 
 def run_kakaopage():
+    from collectors import kakaopage
     platform = "카카오페이지"
     try:
         options = parse_options("KAKAOPAGE")
@@ -144,6 +143,7 @@ def run_kakaopage():
 
 
 def run_munpia():
+    from collectors import munpia
     platform = "문피아"
     try:
         options = parse_options("MUNPIA")
@@ -189,6 +189,7 @@ def run_munpia():
 
 
 def run_naver():
+    from collectors import naver
     platform = "네이버웹툰"
     try:
         options = parse_options("NAVER")
@@ -211,6 +212,7 @@ def run_naver():
 
 
 def run_naver_series():
+    from collectors import naver_series
     platform = "네이버시리즈"
     try:
         options = parse_options("NAVER_SERIES")

@@ -2,7 +2,7 @@
 # 네이버 웹툰 트렌드 수집기
 
 from datetime import date
-import naver_webtoon_crawler as crawler
+from collectors import naver_webtoon_crawler as crawler
 
 
 def collect(options=None):
