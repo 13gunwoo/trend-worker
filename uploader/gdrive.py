@@ -41,7 +41,10 @@ def _get_or_create_folder(service, name, parent_id):
         " and '" + parent_id + "' in parents"
         " and trashed=false"
     )
-    results = service.files().list(q=query, fields="files(id, name)").execute()
+    results = service.files().list(
+        q=query, fields="files(id, name)",
+        supportsAllDrives=True, includeItemsFromAllDrives=True
+    ).execute()
     files = results.get("files", [])
     if files:
         return files[0]["id"]
@@ -51,7 +54,9 @@ def _get_or_create_folder(service, name, parent_id):
         "mimeType": "application/vnd.google-apps.folder",
         "parents": [parent_id],
     }
-    folder = service.files().create(body=metadata, fields="id").execute()
+    folder = service.files().create(
+        body=metadata, fields="id", supportsAllDrives=True
+    ).execute()
     return folder["id"]
 
 
@@ -108,13 +113,18 @@ def upload(filepaths, platform):
             " and '" + target_folder_id + "' in parents"
             " and trashed=false"
         )
-        existing = service.files().list(q=query, fields="files(id)").execute().get("files", [])
+        existing = service.files().list(
+            q=query, fields="files(id)",
+            supportsAllDrives=True, includeItemsFromAllDrives=True
+        ).execute().get("files", [])
         for f in existing:
-            service.files().delete(fileId=f["id"]).execute()
+            service.files().delete(fileId=f["id"], supportsAllDrives=True).execute()
 
         metadata = {"name": filename, "parents": [target_folder_id]}
         media = MediaFileUpload(filepath, mimetype=mime_type)
-        file = service.files().create(body=metadata, media_body=media, fields="id, name").execute()
+        file = service.files().create(
+            body=metadata, media_body=media, fields="id, name", supportsAllDrives=True
+        ).execute()
         uploaded.append(file.get("name"))
 
     return uploaded
@@ -153,7 +163,10 @@ def download_comparison_html(platform, filename, subfolder=None):
         " and '" + comp_folder_id + "' in parents"
         " and trashed=false"
     )
-    results = service.files().list(q=query, fields="files(id)").execute()
+    results = service.files().list(
+        q=query, fields="files(id)",
+        supportsAllDrives=True, includeItemsFromAllDrives=True
+    ).execute()
     files = results.get("files", [])
     if not files:
         return None
@@ -185,9 +198,12 @@ def upload_comparison_html(platform, filename, html_content, subfolder=None):
         " and '" + comp_folder_id + "' in parents"
         " and trashed=false"
     )
-    existing = service.files().list(q=query, fields="files(id)").execute().get("files", [])
+    existing = service.files().list(
+        q=query, fields="files(id)",
+        supportsAllDrives=True, includeItemsFromAllDrives=True
+    ).execute().get("files", [])
     for f in existing:
-        service.files().delete(fileId=f["id"]).execute()
+        service.files().delete(fileId=f["id"], supportsAllDrives=True).execute()
 
     with _tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".html", delete=False) as tmp:
         tmp.write(html_content)
@@ -195,5 +211,7 @@ def upload_comparison_html(platform, filename, html_content, subfolder=None):
 
     metadata = {"name": filename, "parents": [comp_folder_id]}
     media = MediaFileUpload(tmp_path, mimetype="text/html")
-    service.files().create(body=metadata, media_body=media, fields="id").execute()
+    service.files().create(
+        body=metadata, media_body=media, fields="id", supportsAllDrives=True
+    ).execute()
     os.remove(tmp_path)
