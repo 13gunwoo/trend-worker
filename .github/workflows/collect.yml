@@ -4,13 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       platforms:
-        description: '수집할 플랫폼 (쉼표 구분: kakaopage,munpia,naver)'
+        description: '수집할 플랫폼 (쉼표 구분: kakaopage,munpia,naver,naver_series)'
         required: false
         default: 'kakaopage'
       options_kakaopage:
         description: '카카오페이지 옵션 (JSON)'
         required: false
         default: ''
+      options_munpia:
+        description: '문피아 옵션 (JSON)'
+        required: false
+        default: ''
+      options_naver:
+        description: '네이버 웹툰 옵션 (JSON)'
+        required: false
+        default: ''
+      options_naver_series:
+        description: '네이버 시리즈 옵션 (JSON)'
+        required: false
+        default: '{"periods":["daily"],"categories":["fantasy","modern","martial"],"limit":20}'
 
 jobs:
   collect:
@@ -45,4 +57,7 @@ jobs:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
           PLATFORMS: ${{ github.event.inputs.platforms }}
           COLLECT_OPTIONS_KAKAOPAGE: ${{ github.event.inputs.options_kakaopage }}
+          COLLECT_OPTIONS_MUNPIA: '{"free_today":true,"paid_today":true,"paid_new":true,"paid_rising":true,"include_description":false,"limit":10}'
+          COLLECT_OPTIONS_NAVER: '{"ranking":true,"genre":true,"day":true,"trend_analysis":true}'
+          COLLECT_OPTIONS_NAVER_SERIES: '{"periods":["daily"],"categories":["fantasy","modern","martial"],"limit":20}'
         run: python main.py
