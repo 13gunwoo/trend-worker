@@ -159,7 +159,7 @@ def download_comparison_html(platform, filename, subfolder=None):
     """
     Drive에서 비교 HTML 파일을 다운로드해서 내용을 문자열로 반환.
     파일이 없으면 None 반환.
-    subfolder: 비교 폴더 안에 추가 하위 폴더명 (예: "무료", "유료")
+    subfolder: 비교 폴더 안에 추가 하위 폴더명. 문자열 또는 리스트(예: ["일간","판타지"])
     """
     service = _get_service()
     root_folder_id = os.environ.get("GDRIVE_FOLDER_ID")
@@ -168,7 +168,9 @@ def download_comparison_html(platform, filename, subfolder=None):
 
     comp_folder_id = _get_or_create_comparison_folder(service, platform, root_folder_id)
     if subfolder:
-        comp_folder_id = _get_or_create_folder(service, subfolder, comp_folder_id)
+        sub_parts = subfolder if isinstance(subfolder, list) else [subfolder]
+        for part in sub_parts:
+            comp_folder_id = _get_or_create_folder(service, part, comp_folder_id)
 
     query = (
         "name='" + filename + "'"
@@ -191,7 +193,7 @@ def download_comparison_html(platform, filename, subfolder=None):
 def upload_comparison_html(platform, filename, html_content, subfolder=None):
     """
     비교 HTML 파일을 Drive에 업로드 (같은 이름 있으면 덮어씀).
-    subfolder: 비교 폴더 안에 추가 하위 폴더명 (예: "무료", "유료")
+    subfolder: 비교 폴더 안에 추가 하위 폴더명. 문자열 또는 리스트(예: ["일간","판타지"])
     """
     import tempfile as _tempfile
 
@@ -202,7 +204,9 @@ def upload_comparison_html(platform, filename, html_content, subfolder=None):
 
     comp_folder_id = _get_or_create_comparison_folder(service, platform, root_folder_id)
     if subfolder:
-        comp_folder_id = _get_or_create_folder(service, subfolder, comp_folder_id)
+        sub_parts = subfolder if isinstance(subfolder, list) else [subfolder]
+        for part in sub_parts:
+            comp_folder_id = _get_or_create_folder(service, part, comp_folder_id)
 
     # 기존 파일 삭제
     query = (

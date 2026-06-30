@@ -219,13 +219,17 @@ def run_naver_series():
         print("[네이버시리즈] 수집 시작...")
         data = naver_series.collect(options)
 
-        # 순위 변동 비교 처리
+        # 순위 변동 비교 처리 (기간/카테고리 폴더 구조)
+        period_ko_to_key = {"실시간": "realtime", "일간": "daily", "주간": "weekly", "월간": "monthly"}
+
         ranking_data = data.get("랭킹데이터", {})
         for period_ko, categories in ranking_data.items():
+            period_key = period_ko_to_key.get(period_ko, "daily")
             for category_ko, items in categories.items():
-                label = period_ko + " " + category_ko
-                filename = comparison.get_comparison_filename(label)
-                existing_html = gdrive.download_comparison_html(platform, filename)
+                filename = comparison.get_naver_series_comparison_filename(period_ko, period_key, category_ko)
+                subfolder = [period_ko, category_ko]
+
+                existing_html = gdrive.download_comparison_html(platform, filename, subfolder=subfolder)
                 existing_data = comparison.parse_existing_html(existing_html)
                 prev_ranks    = comparison.get_prev_ranks(existing_data)
 
@@ -235,11 +239,11 @@ def run_naver_series():
                     )
 
                 new_html = comparison.build_updated_html(
-                    existing_data, items, "네이버시리즈 " + label,
+                    existing_data, items, "네이버시리즈 " + period_ko + " " + category_ko,
                     title_key="제목", rank_key="순위"
                 )
-                gdrive.upload_comparison_html(platform, filename, new_html)
-                print("[네이버시리즈] 비교 파일 업데이트:", label)
+                gdrive.upload_comparison_html(platform, filename, new_html, subfolder=subfolder)
+                print("[네이버시리즈] 비교 파일 업데이트:", period_ko, category_ko)
 
         output_dir = tempfile.mkdtemp()
         filepaths = run_exporters(data, options, output_dir, platform, platform_key="naver_series")
