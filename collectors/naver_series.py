@@ -116,18 +116,22 @@ def _fetch_detail(product_no):
     title = title_tag.get_text(strip=True) if title_tag else ""
 
     # 작가/출판사
+    # 실제 페이지에서 정보가 담긴 <ul>은 클래스가 없는 경우가 있어
+    # 전체 li를 순회하며 <span>라벨</span> 패턴으로 식별한다.
     author = ""
     publisher = ""
-    for li in soup.select("ul.end_info_lst li, ul.info_lst li"):
-        label = li.select_one("span")
+    for li in soup.select("li"):
+        label = li.find("span", recursive=False)
         if not label:
             continue
         label_text = label.get_text(strip=True)
+        if label_text not in ["글", "작가", "출판사"]:
+            continue
         value_tag = li.select_one("a, em")
         value = value_tag.get_text(strip=True) if value_tag else ""
-        if label_text in ["글", "작가"]:
+        if label_text in ["글", "작가"] and not author:
             author = value
-        elif label_text == "출판사":
+        elif label_text == "출판사" and not publisher:
             publisher = value
 
     # 총 화수
